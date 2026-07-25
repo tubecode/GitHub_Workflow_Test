@@ -8,6 +8,7 @@ PROMPTS_DIR = ROOT_DIR / "prompts"
 NOTEBOOK_DIR = ROOT_DIR / "notebook"
 OUTPUT_DIR = ROOT_DIR / "doc"
 WIKI_OUTPUT_DIR = ROOT_DIR / "wiki"
+MODEL_NAME = os.environ.get("LLM_MODEL", "gemini-3.6-flash")
 
 
 def find_prompt_files() -> list[Path]:
@@ -39,7 +40,7 @@ def create_client() -> genai.Client:
 def generate_documentation(client: genai.Client, prompt_text: str, source_path: Path) -> str:
     source_content = source_path.read_text(encoding="utf-8")
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model=MODEL_NAME,
         contents=[
             prompt_text,
             f"### Source file: {source_path.name}\n\n{source_content}",
@@ -66,6 +67,7 @@ def main() -> None:
         return
 
     client = create_client()
+    print(f"Using model: {MODEL_NAME}")
     print(f"Generating documentation for {len(notebook_files)} notebook file(s) using {len(prompt_files)} prompt file(s)")
 
     for source_path in notebook_files:

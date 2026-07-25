@@ -2,6 +2,19 @@ name: Generate Notebook Documentation
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run on'
+        required: false
+        default: 'main'
+      llm_model:
+        description: 'LLM model to use'
+        required: false
+        default: 'gemini-3.6-flash'
+        type: choice
+        options:
+          - gemini-3.6-flash
+          - gemini-2.5-flash
 
 permissions:
   contents: write
@@ -13,6 +26,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -26,6 +41,7 @@ jobs:
       - name: Generate Documentation
         env:
           GENAI_API_KEY: ${{ secrets.GENAI_API_KEY }}
+          LLM_MODEL: ${{ inputs.llm_model }}
         run: |
           python scripts/generate_docs.py
 
