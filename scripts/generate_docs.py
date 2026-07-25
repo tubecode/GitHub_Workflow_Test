@@ -4,13 +4,19 @@ from pathlib import Path
 from google import genai
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-PROMPT_FILE = ROOT_DIR / "prompts" / "notebook-doc-prompt.txt"
+PROMPTS_DIR = ROOT_DIR / "prompts"
 NOTEBOOK_DIR = ROOT_DIR / "notebook"
 OUTPUT_DIR = ROOT_DIR / "doc"
 
 
-def load_prompt() -> str:
-    return PROMPT_FILE.read_text(encoding="utf-8")
+def find_prompt_files() -> list[Path]:
+    return sorted(
+        [
+            path for path in PROMPTS_DIR.glob("*.txt")
+            if path.is_file() and not path.name.startswith(".")
+        ],
+        key=lambda p: p.name,
+    )
 
 
 def find_notebook_files() -> list[Path]:
@@ -48,20 +54,26 @@ def write_output(output_text: str, target_path: Path) -> None:
 
 
 def main() -> None:
-    prompt_text = load_prompt()
+    prompt_files = find_prompt_files()
+    if not prompt_files:
+        print(f"No prompt files found in {PROMPTS_DIR}")
+        return
+
     notebook_files = find_notebook_files()
     if not notebook_files:
         print(f"No notebook files found in {NOTEBOOK_DIR}")
         return
 
     client = create_client()
-    print(f"Generating documentation for {len(notebook_files)} notebook file(s)")
+    print(f"Generating documentation for {len(notebook_files)} notebook file(s) using {len(prompt_files)} prompt file(s)")
 
     for source_path in notebook_files:
-        target_path = OUTPUT_DIR / f"{source_path.stem}.md"
-        print(f"- Processing {source_path.relative_to(ROOT_DIR)} -> {target_path.relative_to(ROOT_DIR)}")
-        markdown_output = generate_documentation(client, prompt_text, source_path)
-        write_output(markdown_output, target_path)
+        for prompt_path in prompt_files:
+            prompt_text = prompt_path.read_text(encoding="utf-8")
+            target_path = OUTPUT_DIR / source_path.stem / f"{source_path.stem}-{prompt_path.stem}.md"
+            print(f"- Processing {source_path.relative_to(ROOT_DIR)} with {prompt_path.name} -> {target_path.relative_to(ROOT_DIR)}")
+            markdown_output = generate_documentation(client, prompt_text, source_path)
+            write_output(markdown_output, target_path)
 
     print("Documentation generation complete.")
 
