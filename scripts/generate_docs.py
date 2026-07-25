@@ -7,6 +7,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 PROMPTS_DIR = ROOT_DIR / "prompts"
 NOTEBOOK_DIR = ROOT_DIR / "notebook"
 OUTPUT_DIR = ROOT_DIR / "doc"
+WIKI_OUTPUT_DIR = ROOT_DIR / "wiki"
 
 
 def find_prompt_files() -> list[Path]:
@@ -70,9 +71,14 @@ def main() -> None:
     for source_path in notebook_files:
         for prompt_path in prompt_files:
             prompt_text = prompt_path.read_text(encoding="utf-8")
-            target_path = OUTPUT_DIR / source_path.stem / f"{source_path.stem}-{prompt_path.stem}.md"
-            print(f"- Processing {source_path.relative_to(ROOT_DIR)} with {prompt_path.name} -> {target_path.relative_to(ROOT_DIR)}")
             markdown_output = generate_documentation(client, prompt_text, source_path)
+
+            if prompt_path.stem.startswith("wiki-"):
+                target_path = WIKI_OUTPUT_DIR / source_path.stem / f"{source_path.stem}-{prompt_path.stem}.md"
+            else:
+                target_path = OUTPUT_DIR / source_path.stem / f"{source_path.stem}-{prompt_path.stem}.md"
+
+            print(f"- Processing {source_path.relative_to(ROOT_DIR)} with {prompt_path.name} -> {target_path.relative_to(ROOT_DIR)}")
             write_output(markdown_output, target_path)
 
     print("Documentation generation complete.")
